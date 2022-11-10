@@ -1,0 +1,82 @@
+
+# setup -------------------------------------------------------------------
+
+library(ggplot2)
+library(tidyverse)
+
+# read in data
+
+location_afford <- 
+  read_csv('Location_Affordability_Index_v.3.csv') %>% 
+  
+  # subset to DMV area 
+  
+  filter(STUSAB %in% c('DC', 'MD', 'VA')) %>% 
+  
+  # select variable of interest
+  
+  select(OBJECTID,
+         STUSAB,
+         avg_hh_size,
+         avg_h_cost,
+         median_hh_income,
+         households,
+         hh1_transit_cost,
+         gross_hh_density,
+         renter_occupied_hu,
+         owner_occupied_hu)
+
+# creating plot
+
+location_afford %>% 
+  filter(STUSAB == "DC") %>%
+  ggplot(
+    aes(x = avg_h_cost*12,
+        y = median_hh_income)) +
+  geom_point(
+    aes(size = gross_hh_density),
+    alpha = 0.2,
+    color = 'blue') +
+  scale_size_continuous(name = "number of households per land acre",
+                        range = c(1, 10)) +
+  labs(x = "Annual average housing cost($)",
+       y = "median household income($)",
+       title = paste("Housing Cost and Median household Income",
+                     "at the Census Tract Level in DC "),
+       subtitle = paste("postive correlation observed and tract with",
+                        "lower median household income has higher houshold",
+                        "density"),
+       caption = "Source: Department of Housing and Urban Development")
+
+  
+
+
+location_afford %>% 
+  ggplot(
+  aes(x = avg_h_cost*12,
+      y = median_hh_income,
+      color = STUSAB)) +
+  geom_point(
+    aes(size = gross_hh_density),
+    alpha = 0.2) +
+  scale_size_continuous(range = c(1, 10)) 
+
+location_afford %>% 
+  ggplot(
+    aes(x = avg_h_cost*12,
+        y = median_hh_income,
+        color = STUSAB)) +
+  geom_smooth(se = FALSE) +
+  scale_size_continuous(range = c(1, 10)) 
+
+
+location_afford %>% 
+  ggplot(
+    aes(x = renter_occupied_hu,
+        y = avg_h_cost)) +
+  geom_point(
+    aes(size = gross_hh_density),
+    alpha = 0.2) +
+  scale_size_continuous(range = c(1, 10)) 
+
+  

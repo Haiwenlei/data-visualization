@@ -1,0 +1,38 @@
+setwd("~/Documents/Georgetown 2.1/Data Viz/Week 10")
+
+library(readxl)
+library(ggridges)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+
+#ggridges 
+
+p4v2015_1 <- read_excel("p4v2015.1.xls")
+View(p4v2015_1)
+
+#create a vector that contains the years for which we want desnity plots
+year_subset <- c(seq(1950, 2010, by = 5))
+
+#create a subset that includes only Polity IV scores for years we want
+polity4_scores <- filter(p4v2015_1,
+                         year %in% year_subset)
+View(polity4_scores)
+
+polity4_scores$year <- factor(polity4_scores$year)
+levels(polity4_scores$year)
+
+polity4_scores$year <- fct_rev(polity4_scores$year)
+levels(polity4_scores$year)
+
+ggplot(data = polity4_scores,
+       mapping = aes(x = polity2,
+                     y = year)) +
+  geom_density_ridges(fill = "dodgerblue",
+                      alpha = 0.6) +
+  labs(x = "Polity Democratization Score") +
+  theme_minimal() +
+  theme(panel.spacing = unit(1.5, "lines"),
+        axis.title.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+

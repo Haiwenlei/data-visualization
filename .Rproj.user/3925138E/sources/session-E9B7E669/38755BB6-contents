@@ -1,0 +1,151 @@
+# setup -------------------------------------------------------------------
+
+library(ggplot2)
+library(tidyverse)
+library(tidycensus)
+library(ggrepel)
+
+# read in data
+
+
+tidycensus::census_api_key(
+  'd552d7d68d5a5f884968fa1f18057515359eb9e1', # my api key 
+  install = TRUE)
+  # overwrite = TRUE)
+
+# Get census variables associated with the annual American Community Survey
+# (ACS):
+
+census_vars <-
+  tidycensus::load_variables(
+    year = 2021,
+    dataset = 'acs1')
+
+
+# Look for varialbes realted to housing cost 
+
+census_vars %>% 
+  filter(str_detect(concept, 'HOUSING')) %>% 
+  select(concept) %>% 
+  distinct()
+
+# get the variable id for median monthly housing costs 
+
+census_vars %>%   
+  filter(concept == 'MEDIAN MONTHLY HOUSING COSTS (DOLLARS)') %>% 
+  pull(name)
+
+acs_2021 <-
+  tidycensus::get_acs(
+    geography = 'county',
+    variables = 'B25105_001',
+    year = 2021,
+    survey = 'acs1')
+
+acs_2019 <-
+  tidycensus::get_acs(
+    geography = 'county',
+    variables = 'B25105_001',
+    year = 2019,
+    survey = 'acs1')
+
+acs_2018 <-
+  tidycensus::get_acs(
+    geography = 'county',
+    variables = 'B25105_001',
+    year = 2019,
+    survey = 'acs1')
+
+acs_2018_2021 <- 
+  list(
+    acs_2018 = acs_2018,
+    acs_2019 = acs_2019,
+    acs_2021 = acs_2021) %>% 
+  reduce(full_join, by='GEOID') %>% 
+  filter(str_detect(NAME, 
+                    'District of Columbia|Maryland|Virginia')) %>%
+  select(-NAME.x, -NAME.y) 
+
+acs_2018_2021 %>%
+  ggplot(
+    aes(y = NAME,
+        x = estimate)) +
+  geom_col(fill = '#888888',
+           alpha = 0.4) +
+  geom_col(aes(x = estimate.x),
+           fill = '#50B1FB',
+           alpha = 0.4) +
+  scale_y_discrete(limits = rev(acs_2018_2021$NAME)) +
+  labs(x = 'Median monthly housing cost in 2018 and 2021 (dollars)',
+       caption = "Source: American Community Survey",
+       title = paste('Median housing cost increased',
+                     'in DC, Virginia, and Maryland after pandmeic')) +
+  theme(panel.background = element_blank(),
+        axis.title.y = element_blank())
+
+acs_2018_2021 %>%
+  ggplot(
+    aes(y = NAME,
+        x = estimate)) +
+  geom_col(fill = '#888888',
+           width = 0.5,
+           position = position_nudge(y = -0.225)) +
+  geom_col(aes(x = estimate.x),
+           fill = '#50B1FB',
+           width = 0.5,
+           position = position_nudge(y = 0.225)) +
+  scale_y_discrete(limits = rev(acs_2018_2021$NAME)) +
+  labs(x = 'Median monthly housing cost in 2018 and 2021 (dollars)',
+       caption = "Source: American Community Survey",
+       title = paste('Median housing cost increased',
+                     'in DC, Virginia, and Maryland after pandmeic')) +
+  theme(panel.background = element_blank(),
+        axis.title.y = element_blank())
+
+
+
+
+# second plot -------------------------------------------------------------
+
+Housing_ACS_Characteristics_2011_to_2015 <- 
+  read_csv("Housing_ACS_Characteristics_2011_to_2015.csv")
+
+
+
+location_afford <- 
+  read_csv('Location_Affordability_Index_v.3.csv') %>% 
+  
+  # subset to DMV area 
+  
+  filter(STUSAB %in% c('DC', 'MD', 'VA')) %>% 
+  
+  # select variables of interest  
+  select(OBJECTID,
+         STUSAB,
+         COUNTY,
+         pct_renters,
+         hh1_model_h_cost_renters,
+         hh1_t_cost_renters,
+         hh1_h_renters,
+         hh1_ht_renters) 
+
+
+location_afford %>%
+  ggplot(
+    aes(x = hh1_ht_renters,
+        y = pct_renters)) +
+  geom_point(aes(color = STUSAB),
+             alpha = 0.5) +
+  scale_color_manual(values = c('#ffb400', '#e14b31', '#9080ff')) +
+  labs(x = 'Cost as percent of income',
+       y = 'percent of renters',
+       title = 'Renters in DC have less transportation and housing cost',
+       subtitle = 'Scatterplot by census tract',
+       caption = "Source: U.S.Department of Housing and Urban Development",
+       color = 'State') +
+  theme(panel.background = element_blank())
+
+
+
+
+

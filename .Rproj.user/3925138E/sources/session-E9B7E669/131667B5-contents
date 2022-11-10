@@ -1,0 +1,58 @@
+# setup -----------------------------------------------
+
+library(sf)
+library(tmap)
+library(tidyverse)
+
+# Set tmap mode
+
+tmap_mode('view')
+
+# Read in the lifeline file:
+
+rat_density <- 
+  read_rds('data/processed/quiz_3_rats_lifeline.rds')
+
+# Read in polygon shapefile of census tracts in DC:
+
+dc_census <-
+  st_read('data/raw/shapefiles/dc_census.geojson') %>% 
+  set_names(
+    tolower(
+      names(.)))
+
+
+
+rat_density %>% 
+  
+  # create average density variable 
+  
+  mutate(
+    average_density = 
+      case_when(
+        rat_density < 0.1 ~ 'low',
+        rat_density <= 0.4 ~ 'medium',
+        rat_density <= 0.75 ~ 'high',
+        TRUE ~ 'very high') %>% 
+      
+      # rearrange class from low to very high
+      
+      fct_relevel(c('low',
+                    'medium',
+                    'high',
+                    'very high'))) %>%
+  
+  # join with DC census
+  
+  left_join(dc_census,
+            .,
+            by = 'geoid') %>% 
+  
+  # create plot
+  
+  tm_shape() +
+  tm_polygons(col = 'average_density') 
+
+
+
+

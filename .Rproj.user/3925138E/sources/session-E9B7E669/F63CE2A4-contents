@@ -1,0 +1,105 @@
+
+# setup -------------------------------------------------------------------
+
+library(tidyverse)
+library(ggplot2)
+library(ggtext)
+library(patchwork)
+
+
+# replication ---------------------------------------------------------
+
+crime <- 
+  read_csv("crimeRatesByState2005.csv")
+
+crime %>% 
+  ggplot(
+    aes(x = murder,
+        y = burglary)) +
+  geom_point(shape = 21,
+             fill = "blue",
+             color = "blue",
+             alpha = 0.3) +
+  geom_smooth(method = "loess",
+              se = FALSE) +
+  scale_x_continuous(
+    expand = c(0, 0),
+    limits = c(0, 11),
+    breaks = c(0, 2, 4, 6 ,8 ,10)) +
+  scale_y_continuous(
+    expand = c(0, 0),
+    limits = c(0, 1300),
+    breaks = c(0, 200, 400, 600, 800, 1000, 1200)) +
+  labs( x = "Murders \nper 100,000 population",
+        y = "Burglaries \nper 100,000 population",
+        title = "MURDERS VERSUS BURGLARIES IN THE UNITED STATES",
+        subtitle = "States with higher murder rates tend to have higher burglary rates.",
+        caption = "Source: U.S. Census Bureau | Nathan Yau") +
+  theme(
+    axis.title.x = element_text(hjust = 0,
+                                face = "bold"),
+    axis.title.y = element_text(angle = 0,
+                                hjust = 0,
+                                vjust = 1,
+                                face = "bold"),
+    plot.title = element_text(face = "bold"))
+
+
+
+# my graph ----------------------------------------------------------------
+
+location_afford <-
+  read_csv("Location_Affordability_Index_v.3.csv") %>%
+  
+  # find observation only in DMV area 
+  
+  filter(STUSAB %in% c("DC", "MD", "VA")) %>%
+  
+  # select variables of interest 
+  
+  select(STUSAB, 
+         hh1_model_h_cost, 
+         hh1_t_cost, 
+         hh1_h, 
+         hh1_t, 
+         hh1_control_hh_income) %>%   
+  #mutate monthly housing cost to annual housing cost
+  
+  mutate(hh1_model_h_cost = hh1_model_h_cost*12)
+
+income_percent <- 
+  location_afford %>%
+  ggplot(
+    aes(x = hh1_h,
+        y = hh1_t,
+        color = STUSAB)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(
+    aes(color = STUSAB),
+    method = "loess",
+    se = FALSE) +
+  labs(x = "housing cost as a percent of income(%)",
+       y = "transportation cost as a percent of income(%)") +
+  theme(legend.position = "none")
+
+income_amount <-
+  location_afford %>%
+  ggplot(
+    aes(x = hh1_model_h_cost,
+        y = hh1_t_cost,
+        color = STUSAB)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(
+    aes(color = STUSAB),
+    method = "loess",
+    se = FALSE) +
+  labs(x = "housing cost($)",
+       y = "transportation cost($)",
+       color = "States")
+
+income_percent + income_amount +
+  plot_annotation(title = "Housing and Transportation Cost for Median-Income Family in DMV Area",
+                  subtitle = "Amount of cost and percent of income at the Census tract level",
+                  caption = "Source: Department of Housing and Urban Development")
+
+
